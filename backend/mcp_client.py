@@ -30,6 +30,12 @@ class MCPClient:
         self.robot_base = os.getenv("OPENTRONS_HOST", "192.168.68.119:31950")
         if not self.robot_base.startswith("http"):
             self.robot_base = f"http://{self.robot_base}"
+        
+        # カメラ設定を環境変数から読み込む
+        self.camera_device_index = int(os.getenv("CAMERA_DEVICE_INDEX", "1"))
+        self.camera_width = int(os.getenv("CAMERA_WIDTH", "1920"))
+        self.camera_height = int(os.getenv("CAMERA_HEIGHT", "1080"))
+        self.camera_warmup_frames = int(os.getenv("CAMERA_WARMUP_FRAMES", "10"))
     
     def _opentrons_headers(self):
         """Opentrons API headers"""
@@ -37,23 +43,29 @@ class MCPClient:
     
     async def take_photo(
         self,
-        device_index: int = 0,
-        width: int = 1920,
-        height: int = 1080,
-        warmup_frames: int = 10
+        device_index: int = None,
+        width: int = None,
+        height: int = None,
+        warmup_frames: int = None
     ) -> str:
         """
         Capture a photo using the camera (直接実装版)
         
         Args:
-            device_index: Camera device index (default: 0)
-            width: Image width (default: 1920)
-            height: Image height (default: 1080)
-            warmup_frames: Number of warmup frames (default: 10)
+            device_index: Camera device index (default: from env CAMERA_DEVICE_INDEX)
+            width: Image width (default: from env CAMERA_WIDTH)
+            height: Image height (default: from env CAMERA_HEIGHT)
+            warmup_frames: Number of warmup frames (default: from env CAMERA_WARMUP_FRAMES)
             
         Returns:
             Absolute path to the captured image
         """
+        # 環境変数からのデフォルト値を使用
+        device_index = device_index if device_index is not None else self.camera_device_index
+        width = width if width is not None else self.camera_width
+        height = height if height is not None else self.camera_height
+        warmup_frames = warmup_frames if warmup_frames is not None else self.camera_warmup_frames
+        
         try:
             # カメラを開く
             cam = cv2.VideoCapture(device_index)
