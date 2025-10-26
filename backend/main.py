@@ -2,7 +2,7 @@
 FastAPI Application for Opentrons Protocol Sanity Check
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
@@ -12,11 +12,12 @@ from pathlib import Path
 from typing import Dict, Any
 
 from backend.gemini_service import GeminiService
+from backend.chat_service import get_chat_service
 
 app = FastAPI(
     title="SanityCheck AI API",
     description="AI-powered physical setup verification system for Opentrons experimental protocols",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # CORS settings (allow frontend access)
@@ -164,6 +165,195 @@ async def generate_checkpoints(
         raise HTTPException(
             status_code=500,
             detail=f"Error occurred during checkpoint generation: {str(e)}"
+        )
+
+
+# ============================================================================
+# CHAT-BASED VERIFICATION ENDPOINTS (V2)
+# ============================================================================
+
+@app.post("/api/chat/start")
+async def start_chat_session(
+    protocol_file: UploadFile = File(..., description="Opentrons protocol file (.py)")
+):
+    """
+    Start a new chat session by uploading a protocol file
+    
+    Args:
+        protocol_file: Opentrons protocol file (.py)
+        
+    Returns:
+        Session ID and initial AI message
+    """
+    # File format validation
+    if not protocol_file.filename.endswith('.py'):
+        raise HTTPException(
+            status_code=400,
+            detail="Protocol file must be in .py format"
+        )
+    
+    # Save protocol file to temporary location
+    with tempfile.TemporaryDirectory() as temp_dir:
+        protocol_path = Path(temp_dir) / protocol_file.filename
+        with open(protocol_path, "wb") as f:
+            content = await protocol_file.read()
+            f.write(content)
+        
+        # Read protocol content
+        protocol_content = content.decode("utf-8")
+        
+        # Create a permanent copy for this session
+        session_temp_dir = Path(tempfile.gettempdir()) / "sanitycheckAI_sessions"
+        session_temp_dir.mkdir(exist_ok=True)
+        
+        try:
+            # Create chat session
+            chat_service = get_chat_service()
+            session_id = chat_service.create_session(protocol_content, str(protocol_path))
+            
+            # Copy protocol file to session directory
+            session_dir = session_temp_dir / session_id
+            session_dir.mkdir(exist_ok=True)
+            session_protocol_path = session_dir / protocol_file.filename
+            
+            with open(session_protocol_path, "w", encoding="utf-8") as f:
+                f.write(protocol_content)
+            
+            # Update the session with permanent path
+            chat_service.sessions[session_id].protocol_path = str(session_protocol_path)
+            
+            # Get initial message
+            history = chat_service.get_history(session_id)
+            initial_message = history[-1] if history else {"content": "Session started"}
+            
+            return {
+                "session_id": session_id,
+                "message": initial_message.get("content", ""),
+                "protocol_name": protocol_file.filename
+            }
+            
+        except ValueError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Configuration error: {str(e)}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error creating chat session: {str(e)}"
+            )
+
+
+@app.post("/api/chat/message")
+async def send_chat_message(
+    session_id: str = Form(...),
+    message: str = Form(...)
+):
+    """
+    Send a message in a chat session
+    
+    Args:
+        session_id: Chat session ID
+        message: User's message
+        
+    Returns:
+        AI response with any actions taken
+    """
+    # Log the request
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Received chat message - session_id: {session_id}, message: {message}")
+    
+    try:
+        chat_service = get_chat_service()
+        response = await chat_service.send_message(session_id, message)
+        logger.info(f"Response sent successfully")
+        return response
+        
+    except ValueError as e:
+        logger.error(f"ValueError: {str(e)}")
+        raise HTTPException(
+            status_code=404,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Exception: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing message: {str(e)}"
+        )
+
+
+@app.get("/api/chat/history/{session_id}")
+async def get_chat_history(session_id: str):
+    """
+    Get chat history for a session
+    
+    Args:
+        session_id: Chat session ID
+        
+    Returns:
+        List of messages
+    """
+    try:
+        chat_service = get_chat_service()
+        history = chat_service.get_history(session_id)
+        return {"session_id": session_id, "messages": history}
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving history: {str(e)}"
+        )
+
+
+@app.get("/api/chat/image/{session_id}/{image_index}")
+async def get_chat_image(session_id: str, image_index: int):
+    """
+    Get a captured image from chat session
+    
+    Args:
+        session_id: Chat session ID
+        image_index: Index of the image
+        
+    Returns:
+        Image file
+    """
+    try:
+        chat_service = get_chat_service()
+        image_path = chat_service.get_image(session_id, image_index)
+        
+        if not os.path.exists(image_path):
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        # Return the image
+        from PIL import Image
+        import io
+        
+        img = Image.open(image_path)
+        
+        # Convert to RGB if necessary
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Save to bytes buffer as PNG
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+        
+        return Response(content=img_byte_arr.getvalue(), media_type="image/png")
+        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving image: {str(e)}"
         )
 
 

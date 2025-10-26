@@ -1,45 +1,41 @@
 // Get DOM elements
 const uploadForm = document.getElementById('uploadForm');
-const validateBtn = document.getElementById('validateBtn');
-const resetBtn = document.getElementById('resetBtn');
+const startChatBtn = document.getElementById('startChatBtn');
+const sendMessageBtn = document.getElementById('sendMessageBtn');
+const chatInput = document.getElementById('chatInput');
+const newSessionBtn = document.getElementById('newSessionBtn');
 const retryBtn = document.getElementById('retryBtn');
-const executeBtn = document.getElementById('executeBtn');
-const backToValidationBtn = document.getElementById('backToValidationBtn');
 
-const uploadSection = document.querySelector('.upload-section');
+const uploadSection = document.getElementById('uploadSection');
 const loadingSection = document.getElementById('loadingSection');
-const resultSection = document.getElementById('resultSection');
+const chatSection = document.getElementById('chatSection');
 const errorSection = document.getElementById('errorSection');
-const executeSection = document.getElementById('executeSection');
 
-const overallResult = document.getElementById('overallResult');
-const checkpointsList = document.getElementById('checkpointsList');
+const chatMessages = document.getElementById('chatMessages');
+const protocolName = document.getElementById('protocolName');
 const errorMessage = document.getElementById('errorMessage');
-const timelineAccordion = document.getElementById('timelineAccordion');
+
+// Global state
+let currentSessionId = null;
 
 // Section display management
 function showSection(section) {
-    // Hide all sections
     uploadSection.style.display = 'none';
     loadingSection.style.display = 'none';
-    resultSection.style.display = 'none';
+    chatSection.style.display = 'none';
     errorSection.style.display = 'none';
-    executeSection.style.display = 'none';
     
-    // Show specified section
     section.style.display = 'block';
 }
 
-// Form submission handling
+// Upload form submission
 uploadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const protocolFile = document.getElementById('protocolFile').files[0];
-    const imageFile = document.getElementById('imageFile').files[0];
     
-    // Check if files are selected
-    if (!protocolFile || !imageFile) {
-        showError('Please select both protocol file and image file.');
+    if (!protocolFile) {
+        showError('Please select a protocol file.');
         return;
     }
     
@@ -50,10 +46,9 @@ uploadForm.addEventListener('submit', async (e) => {
         // Create FormData
         const formData = new FormData();
         formData.append('protocol_file', protocolFile);
-        formData.append('image_file', imageFile);
         
         // API request
-        const response = await fetch('/api/validate', {
+        const response = await fetch('/api/chat/start', {
             method: 'POST',
             body: formData
         });
@@ -65,49 +60,208 @@ uploadForm.addEventListener('submit', async (e) => {
         
         const result = await response.json();
         
-        // Display results
-        displayResults(result);
+        // Store session ID
+        currentSessionId = result.session_id;
+        
+        // Update protocol name
+        protocolName.textContent = `Protocol: ${result.protocol_name}`;
+        
+        // Clear chat messages
+        chatMessages.innerHTML = '';
+        
+        // Add initial AI message
+        addMessage('assistant', result.message);
+        
+        // Show chat section
+        showSection(chatSection);
+        
+        // Focus on input
+        chatInput.focus();
         
     } catch (error) {
         console.error('Error:', error);
-        showError(error.message || 'An error occurred during verification.');
+        showError(error.message || 'An error occurred while starting the chat session.');
     }
 });
 
-// Display results
-function displayResults(data) {
-    // Display overall result
-    const isPass = data.overall_result === 'pass';
-    overallResult.className = `overall-result ${data.overall_result}`;
-    overallResult.innerHTML = `
-        <span class="overall-result-icon">${isPass ? '✅' : '❌'}</span>
-        <div>${isPass ? 'Verification Passed' : 'Verification Failed'}</div>
-        <small style="font-size: 1rem; font-weight: normal; display: block; margin-top: 10px;">
-            ${isPass ? 'All checkpoints cleared successfully' : 'Issues detected in some checkpoints'}
-        </small>
-    `;
+// Send message
+async function sendMessage() {
+    const message = chatInput.value.trim();
     
-    // Display checkpoints list
-    checkpointsList.innerHTML = '';
+    if (!message || !currentSessionId) {
+        return;
+    }
     
-    if (data.checkpoints && data.checkpoints.length > 0) {
-        data.checkpoints.forEach(checkpoint => {
-            const checkpointItem = createCheckpointItem(checkpoint);
-            checkpointsList.appendChild(checkpointItem);
+    // Add user message to UI
+    addMessage('user', message);
+    
+    // Clear input
+    chatInput.value = '';
+    
+    // Disable input while processing
+    chatInput.disabled = true;
+    sendMessageBtn.disabled = true;
+    
+    try {
+        // Create form data
+        const formData = new FormData();
+        formData.append('session_id', currentSessionId);
+        formData.append('message', message);
+        
+        // API request
+        const response = await fetch('/api/chat/message', {
+            method: 'POST',
+            body: formData  // FormData will automatically set correct Content-Type
         });
-    } else {
-        checkpointsList.innerHTML = '<p>No checkpoints available.</p>';
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Server error:', errorData);
+            throw new Error(errorData.detail || 'Server error occurred');
+        }
+        
+        const result = await response.json();
+        console.log('Message sent successfully:', result);
+        
+        // Add AI response
+        addMessage('assistant', result.message, result);
+        
+        // Re-enable input
+        chatInput.disabled = false;
+        sendMessageBtn.disabled = false;
+        chatInput.focus();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        addMessage('system', `Error: ${error.message}`);
+        chatInput.disabled = false;
+        sendMessageBtn.disabled = false;
+    }
+}
+
+// Send message button click
+sendMessageBtn.addEventListener('click', sendMessage);
+
+// Enter key to send
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+// Add message to chat
+function addMessage(role, content, data = null) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${role}-message`;
+    
+    // Create message content
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    // Format content (convert markdown-style formatting)
+    let formattedContent = escapeHtml(content);
+    
+    // Convert **bold** to <strong>
+    formattedContent = formattedContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert line breaks
+    formattedContent = formattedContent.replace(/\n/g, '<br>');
+    
+    contentDiv.innerHTML = formattedContent;
+    messageDiv.appendChild(contentDiv);
+    
+    // Add image if present
+    if (data && data.image_url) {
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'message-image';
+        
+        const img = document.createElement('img');
+        img.src = data.image_url;
+        img.alt = 'Setup Image';
+        img.className = 'setup-image';
+        img.onerror = function() {
+            this.style.display = 'none';
+            const errorText = document.createElement('p');
+            errorText.textContent = 'Image not available';
+            errorText.className = 'image-error';
+            imageDiv.appendChild(errorText);
+        };
+        
+        imageDiv.appendChild(img);
+        messageDiv.appendChild(imageDiv);
     }
     
-    // Show Execute button if validation passed
-    if (isPass) {
-        executeBtn.style.display = 'inline-block';
-    } else {
-        executeBtn.style.display = 'none';
+    // Add checkpoints if present
+    if (data && data.checkpoints) {
+        const checkpointsDiv = createCheckpointsDisplay(data.checkpoints);
+        messageDiv.appendChild(checkpointsDiv);
     }
     
-    // Show result section
-    showSection(resultSection);
+    // Add action indicator if present
+    if (data && data.action) {
+        const actionDiv = document.createElement('div');
+        actionDiv.className = 'message-action';
+        
+        let actionText = '';
+        if (data.action === 'photo_taken') {
+            actionText = '📷 Photo captured and analyzed';
+        } else if (data.action === 'protocol_executed') {
+            actionText = '✅ Protocol execution started';
+        }
+        
+        if (actionText) {
+            actionDiv.innerHTML = `<em>${actionText}</em>`;
+            messageDiv.appendChild(actionDiv);
+        }
+    }
+    
+    // Add timestamp
+    const timestampDiv = document.createElement('div');
+    timestampDiv.className = 'message-timestamp';
+    timestampDiv.textContent = new Date().toLocaleTimeString();
+    messageDiv.appendChild(timestampDiv);
+    
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Create checkpoints display
+function createCheckpointsDisplay(checkpointsData) {
+    const container = document.createElement('div');
+    container.className = 'checkpoints-container';
+    
+    const title = document.createElement('h4');
+    title.textContent = 'Verification Results';
+    container.appendChild(title);
+    
+    // Overall result
+    const overallResult = checkpointsData.overall_result;
+    const isPass = overallResult === 'pass';
+    
+    const overallDiv = document.createElement('div');
+    overallDiv.className = `overall-result ${overallResult}`;
+    overallDiv.innerHTML = `
+        <span class="overall-result-icon">${isPass ? '✅' : '❌'}</span>
+        <span>${isPass ? 'All checks passed' : 'Some checks failed'}</span>
+    `;
+    container.appendChild(overallDiv);
+    
+    // Checkpoints list
+    const checkpointsList = document.createElement('div');
+    checkpointsList.className = 'checkpoints-list';
+    
+    if (checkpointsData.checkpoints && checkpointsData.checkpoints.length > 0) {
+        checkpointsData.checkpoints.forEach(checkpoint => {
+            const item = createCheckpointItem(checkpoint);
+            checkpointsList.appendChild(item);
+        });
+    }
+    
+    container.appendChild(checkpointsList);
+    
+    return container;
 }
 
 // Create checkpoint item
@@ -144,210 +298,19 @@ function showError(message) {
     showSection(errorSection);
 }
 
-// Reset button
-resetBtn.addEventListener('click', () => {
-    uploadForm.reset();
-    executeBtn.style.display = 'none';
-    showSection(uploadSection);
-});
-
 // Retry button
 retryBtn.addEventListener('click', () => {
     showSection(uploadSection);
 });
 
-// Back to validation button
-backToValidationBtn.addEventListener('click', () => {
-    showSection(resultSection);
-});
-
-// Execute button - Start experiment
-executeBtn.addEventListener('click', async () => {
-    console.log('Execute button clicked');
-    
-    // Show loading
-    showSection(loadingSection);
-    
-    try {
-        // Call execute API
-        const response = await fetch('/api/execute', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to execute experiment');
-        }
-        
-        const experimentData = await response.json();
-        console.log('Experiment data:', experimentData);
-        
-        // Display experiment timeline progressively (10 seconds per timepoint)
-        displayExperimentTimelineProgressively(experimentData);
-        
-    } catch (error) {
-        console.error('Execute error:', error);
-        showError(error.message || 'An error occurred during experiment execution.');
+// New session button
+newSessionBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to start a new session? Current conversation will be lost.')) {
+        currentSessionId = null;
+        uploadForm.reset();
+        showSection(uploadSection);
     }
 });
-
-// Display experiment timeline progressively (10 seconds per timepoint)
-function displayExperimentTimelineProgressively(data) {
-    timelineAccordion.innerHTML = '';
-    
-    if (!data.timepoints || data.timepoints.length === 0) {
-        timelineAccordion.innerHTML = '<p>No timepoints available.</p>';
-        showSection(executeSection);
-        return;
-    }
-    
-    // Show execute section
-    showSection(executeSection);
-    
-    // Store experiment data
-    window.currentExperimentData = data;
-    
-    // Add timepoints progressively (one every 10 seconds)
-    let currentIndex = 0;
-    
-    // Add first timepoint immediately
-    const firstTimepoint = data.timepoints[currentIndex];
-    const firstAccordionItem = createTimepointAccordion(firstTimepoint, currentIndex, data.experiment_id);
-    timelineAccordion.appendChild(firstAccordionItem);
-    currentIndex++;
-    
-    // Add remaining timepoints every 10 seconds
-    const intervalId = setInterval(() => {
-        if (currentIndex < data.timepoints.length) {
-            const timepoint = data.timepoints[currentIndex];
-            const accordionItem = createTimepointAccordion(timepoint, currentIndex, data.experiment_id);
-            timelineAccordion.appendChild(accordionItem);
-            currentIndex++;
-        } else {
-            // All timepoints added
-            clearInterval(intervalId);
-            console.log('All timepoints displayed');
-        }
-    }, 10000); // 10 seconds
-}
-
-// Display experiment timeline (all at once - for testing)
-function displayExperimentTimeline(data) {
-    timelineAccordion.innerHTML = '';
-    
-    if (!data.timepoints || data.timepoints.length === 0) {
-        timelineAccordion.innerHTML = '<p>No timepoints available.</p>';
-        showSection(executeSection);
-        return;
-    }
-    
-    // Create accordion items for each timepoint
-    data.timepoints.forEach((timepoint, index) => {
-        const accordionItem = createTimepointAccordion(timepoint, index, data.experiment_id);
-        timelineAccordion.appendChild(accordionItem);
-    });
-    
-    // Show execute section
-    showSection(executeSection);
-}
-
-// Create timepoint accordion item
-function createTimepointAccordion(timepoint, index, experimentId) {
-    const time = timepoint.time;
-    const wells = timepoint.wells || [];
-    
-    // Count contamination
-    const contamCount = wells.filter(w => 
-        w.rf_prediction && w.rf_prediction.label === 'contaminated'
-    ).length;
-    
-    const allClean = contamCount === 0;
-    const statusIcon = allClean ? '✅' : '⚠️';
-    const statusText = allClean ? 'All Clean' : `${contamCount} Possible Contaminated`;
-    
-    // Create accordion container
-    const accordionDiv = document.createElement('div');
-    accordionDiv.className = 'accordion-item';
-    
-    // Create header
-    const header = document.createElement('div');
-    header.className = 'accordion-header';
-    header.innerHTML = `
-        <span class="timepoint-label">t=${time}s ${index === 0 ? '(Initial)' : ''}</span>
-        <span class="timepoint-status">${statusIcon} ${statusText}</span>
-        <span class="accordion-toggle">▼</span>
-    `;
-    
-    // Create content (wells)
-    const content = document.createElement('div');
-    content.className = 'accordion-content';
-    content.style.display = 'none';
-    
-    wells.forEach(well => {
-        const wellDiv = createWellDisplay(well, time, experimentId);
-        content.appendChild(wellDiv);
-    });
-    
-    // Toggle functionality
-    header.addEventListener('click', () => {
-        const isOpen = content.style.display === 'block';
-        content.style.display = isOpen ? 'none' : 'block';
-        header.querySelector('.accordion-toggle').textContent = isOpen ? '▼' : '▲';
-    });
-    
-    accordionDiv.appendChild(header);
-    accordionDiv.appendChild(content);
-    
-    return accordionDiv;
-}
-
-// Create well display
-function createWellDisplay(well, time, experimentId) {
-    const wellDiv = document.createElement('div');
-    wellDiv.className = 'well-display';
-    
-    const rfPred = well.rf_prediction || {};
-    const llmPred = well.llm_prediction || {};
-    
-    const rfLabel = rfPred.label || 'unknown';
-    const rfConfidence = (rfPred.confidence || 0).toFixed(2);
-    const llmLabel = llmPred.label || 'unknown';
-    const llmReasoning = llmPred.reasoning || 'No reasoning provided';
-    
-    const rfIcon = rfLabel === 'clean' ? '✅' : rfLabel === 'contaminated' ? '⚠️' : '❓';
-    const llmIcon = llmLabel === 'clean' ? '✅' : llmLabel === 'contaminated' ? '⚠️' : '❓';
-    
-    // Construct image URL
-    const imageUrl = `/api/well_image/${experimentId}/${time}/${well.well_id}`;
-    
-    wellDiv.innerHTML = `
-        <div class="well-header">
-            <h4>Well ${well.well_id}</h4>
-        </div>
-        <div class="well-image-container">
-            <img src="${imageUrl}" alt="Well ${well.well_id} at t=${time}s" class="well-image" 
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <p class="image-error" style="display: none;">Image not available</p>
-        </div>
-        <div class="well-analysis">
-            <div class="analysis-section">
-                <h5>🔬 Random Forest Analysis</h5>
-                <p>${rfIcon} <strong>${rfLabel.toUpperCase()}</strong></p>
-                <p>Confidence: ${rfConfidence}</p>
-            </div>
-            <div class="analysis-section">
-                <h5>🤖 Gemini Vision Analysis</h5>
-                <p>${llmIcon} <strong>${llmLabel.toUpperCase()}</strong></p>
-                <p class="llm-reasoning">${llmReasoning}</p>
-            </div>
-        </div>
-    `;
-    
-    return wellDiv;
-}
 
 // HTML escape
 function escapeHtml(text) {
@@ -358,4 +321,3 @@ function escapeHtml(text) {
 
 // Initial state: show upload section
 showSection(uploadSection);
-
