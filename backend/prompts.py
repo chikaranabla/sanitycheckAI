@@ -32,14 +32,13 @@ Analyze the protocol file content and generate physical setup checkpoints from t
    - For tip racks, check if all tips are properly filled
    - Verify all necessary items for initial state are present
 
-3. **Trash Bin Placement**
-   - Check if trash bin is at the position specified in protocol.load_trash_bin()
-
-4. **Unwanted Items Check**
+3. **Unwanted Items Check**
    - Verify no unnecessary labware is placed at positions not specified in the protocol
 
-5. **Protocol-Specific Requirements**
+4. **Protocol-Specific Requirements**
    - Check other protocol-specific setup requirements if any
+
+**Note: Trash bins are assumed to be already set up correctly. Do NOT create checkpoints for trash bin placement or verification.**
 
 **IMPORTANT: Do NOT include deck offset settings (set_offset) in checkpoints. Offsets are software configurations and not part of physical setup verification.**
 
@@ -83,6 +82,7 @@ Verify the provided image based on the generated checkpoints:
 - If you cannot determine from the image, clearly state so
 - Use accurate deck position notation (e.g., C2, A3)
 - Provide clear and detailed explanations in English
+- **NEVER include trash bin placement (load_trash_bin) in checkpoints - trash bins are assumed to be already set up correctly**
 - **NEVER include deck offset settings (set_offset) in checkpoints - these are software configurations, not physical setup items**
 """
 
@@ -98,10 +98,11 @@ From the above protocol, please output checkpoints for physical setup verificati
 At minimum, include the following aspects:
 1. Labware placement positions (positions specified in load_labware)
 2. Whether all tips in tip rack are filled
-3. Trash bin placement position (position specified in load_trash_bin)
-4. Whether unnecessary labware is placed in unspecified locations
+3. Whether unnecessary labware is placed in unspecified locations
 
-**Important: Do NOT create checkpoints for deck offset settings (set_offset) - these are software configurations, not physical setup items.**
+**Important Notes:**
+- Do NOT create checkpoints for trash bin placement (load_trash_bin) - trash bins are assumed to be already set up correctly
+- Do NOT create checkpoints for deck offset settings (set_offset) - these are software configurations, not physical setup items
 """
 
 

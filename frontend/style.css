@@ -564,8 +564,8 @@ footer {
 .chat-card {
     display: flex;
     flex-direction: column;
-    height: 700px;
-    max-height: 80vh;
+    height: 850px;
+    max-height: 85vh;
 }
 
 .chat-header {
@@ -843,7 +843,7 @@ footer {
 /* Responsive Design for Chat */
 @media (max-width: 768px) {
     .chat-card {
-        height: 600px;
+        height: 750px;
     }
     
     .chat-message {
