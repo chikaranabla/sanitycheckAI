@@ -2,6 +2,15 @@
 FastAPI Application for Opentrons Protocol Sanity Check
 """
 
+import sys
+import asyncio
+
+# Windows環境でのMCPサブプロセス対応
+if sys.platform == "win32":
+    # WindowsSelectorEventLoopPolicyを使用してサブプロセス作成を可能にする
+    # ProactorEventLoopではサブプロセス作成に制限があるため
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
