@@ -1,53 +1,53 @@
-# クイックスタートガイド
+# Quick Start Guide
 
-このガイドでは、最速で Opentrons Protocol Sanity Check System を起動し、動作確認する手順を説明します。
+This guide explains how to get SanityCheck AI up and running in the fastest way possible.
 
-## ⏱️ 5分で始める
+## ⏱️ Get Started in 5 Minutes
 
-### ステップ1: Google AI API Keyの取得（2分）
+### Step 1: Get Google AI API Key (2 minutes)
 
-1. [Google AI Studio](https://makersuite.google.com/app/apikey) にアクセス
-2. Googleアカウントでログイン
-3. **"Create API Key"** をクリック
-4. 生成されたAPIキーをコピー（後で使用します）
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click **"Create API Key"**
+4. Copy the generated API key (you'll need it later)
 
-### ステップ2: 環境のセットアップ（2分）
+### Step 2: Environment Setup (2 minutes)
 
 ```bash
-# 1. プロジェクトディレクトリに移動
+# 1. Navigate to project directory
 cd sanitycheckAI
 
-# 2. 仮想環境の作成（Windows）
+# 2. Create virtual environment (Windows)
 python -m venv venv
 venv\Scripts\activate
 
-# 仮想環境の作成（macOS/Linux）
+# Create virtual environment (macOS/Linux)
 python3 -m venv venv
 source venv/bin/activate
 
-# 3. 依存関係のインストール
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. 環境変数ファイルの作成
-# Windowsの場合
-echo GOOGLE_API_KEY=ここに先ほどコピーしたAPIキーを貼り付け > .env
+# 4. Create environment variable file
+# For Windows
+echo GOOGLE_API_KEY=paste_your_api_key_here > .env
 echo PORT=8000 >> .env
 
-# macOS/Linuxの場合
-echo "GOOGLE_API_KEY=ここに先ほどコピーしたAPIキーを貼り付け" > .env
+# For macOS/Linux
+echo "GOOGLE_API_KEY=paste_your_api_key_here" > .env
 echo "PORT=8000" >> .env
 ```
 
-**重要**: `.env` ファイルの `GOOGLE_API_KEY=` の後に、ステップ1でコピーしたAPIキーを貼り付けてください。
+**Important**: In the `.env` file, paste the API key you copied in Step 1 after `GOOGLE_API_KEY=`.
 
-### ステップ3: サーバーの起動（1分）
+### Step 3: Start Server (1 minute)
 
 ```bash
-# サーバーを起動
+# Start the server
 python -m backend.main
 ```
 
-以下のようなメッセージが表示されれば成功です：
+If you see a message like this, you're successful:
 
 ```
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
@@ -57,157 +57,156 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 ```
 
-### ステップ4: ブラウザでアクセス
+### Step 4: Access in Browser
 
-ブラウザで以下のURLを開きます：
+Open the following URL in your browser:
 
 ```
 http://localhost:8000
 ```
 
-## 🧪 サンプルファイルで動作確認
+## 🧪 Test with Sample Files
 
-プロジェクトに含まれるサンプルファイルを使用して、システムの動作を確認できます。
+Use the sample files included in the project to verify the system is working.
 
-### 正しいセッティングのテスト
+### Test with Correct Setup
 
-1. **プロトコルファイル**: `96-ch_partial_test.py` を選択
-2. **画像ファイル**: `good_photo_1.jpg` を選択
-3. **検証開始** ボタンをクリック
+1. **Protocol File**: Select `96-ch_partial_test.py`
+2. **Image File**: Select `good_photo_1.jpg`
+3. Click **Start Verification** button
 
-結果: ✅ すべてのチェックポイントが合格するはずです
+Result: ✅ All checkpoints should pass
 
-### 誤ったセッティングのテスト
+### Test with Incorrect Setup
 
-1. **プロトコルファイル**: `96-ch_partial_test.py` を選択
-2. **画像ファイル**: `bad_photo_1.jpg` または `bad_photo_2.jpg` を選択
-3. **検証開始** ボタンをクリック
+1. **Protocol File**: Select `96-ch_partial_test.py`
+2. **Image File**: Select `bad_photo_1.jpg` or `bad_photo_2.jpg`
+3. Click **Start Verification** button
 
-結果: ❌ 一部のチェックポイントで問題が検出されるはずです
+Result: ❌ Issues should be detected in some checkpoints
 
-## 📊 結果の見方
+## 📊 Understanding Results
 
-### 総合判定
+### Overall Judgment
 
-- **✅ 検証成功**: すべてのチェックポイントをクリア
-- **❌ 検証失敗**: 1つ以上のチェックポイントで問題を検出
+- **✅ Verification Passed**: All checkpoints cleared
+- **❌ Verification Failed**: Issues detected in one or more checkpoints
 
-### チェックポイント詳細
+### Checkpoint Details
 
-各チェックポイントには以下の情報が表示されます：
+Each checkpoint displays the following information:
 
-- **番号**: チェック項目の識別番号
-- **説明**: 何を確認しているか
-- **結果**: ✅（合格）または ❌（不合格）
-- **詳細**: 判定の理由や追加情報
+- **Number**: Checkpoint identification number
+- **Description**: What is being checked
+- **Result**: ✅ (Pass) or ❌ (Fail)
+- **Details**: Reason for judgment and additional information
 
-## 🎯 期待される動作
+## 🎯 Expected Behavior
 
-### プロトコル: `96-ch_partial_test.py`
+### Protocol: `96-ch_partial_test.py`
 
-このプロトコルでは以下の配置が期待されます：
+This protocol expects the following placement:
 
-1. **C2**: 96 Filter Tiprack 1000µL（すべてのチップが埋まっている）
-2. **A3**: ゴミ箱（trash bin）
-3. **その他の位置**: 何も配置されていない
+1. **C2**: 96 Filter Tiprack 1000µL (all tips filled)
+2. **A3**: Trash bin
+3. **Other positions**: Nothing placed
 
-### good_photo_1.jpg の場合
+### For good_photo_1.jpg
 
-- C2にチップラックが正しく配置されている
-- すべてのチップが揃っている
-- A3にゴミ箱がある
-- 不要な場所に何も置かれていない
+- Tip rack correctly placed at C2
+- All tips are present
+- Trash bin at A3
+- Nothing placed in unnecessary locations
 
-→ **結果**: ✅ すべて合格
+→ **Result**: ✅ All pass
 
-### bad_photo_*.jpg の場合
+### For bad_photo_*.jpg
 
-様々な問題が含まれています：
+Contains various issues:
 
-- チップが不足している
-- 位置が間違っている
-- 不要なものが配置されている
+- Missing tips
+- Wrong position
+- Unnecessary items placed
 
-→ **結果**: ❌ 問題が検出される
+→ **Result**: ❌ Issues detected
 
-## 🔧 トラブルシューティング
+## 🔧 Troubleshooting
 
-### サーバーが起動しない
+### Server Won't Start
 
 ```bash
-# エラーメッセージを確認
+# Check error message
 python -m backend.main
 ```
 
-**よくある原因:**
-- `.env` ファイルが作成されていない
-- APIキーが設定されていない
-- ポート8000が使用中
+**Common Causes:**
+- `.env` file not created
+- API key not set
+- Port 8000 already in use
 
-**解決方法:**
+**Solution:**
 ```bash
-# .env ファイルの確認
+# Check .env file
 cat .env  # macOS/Linux
 type .env  # Windows
 
-# 別のポートで起動
-# .env ファイルで PORT=8001 に変更
+# Use different port
+# Change PORT=8001 in .env file
 ```
 
-### "Google API Key is required" エラー
+### "Google API Key is required" Error
 
-`.env` ファイルを確認してください：
+Check your `.env` file:
 
 ```env
-GOOGLE_API_KEY=実際のAPIキー
+GOOGLE_API_KEY=actual_api_key
 PORT=8000
 ```
 
-APIキーが正しく設定されているか、スペースや改行が余分に入っていないか確認してください。
+Verify the API key is set correctly with no extra spaces or line breaks.
 
-### ブラウザでページが表示されない
+### Page Doesn't Display in Browser
 
-1. サーバーが起動しているか確認
-2. URLが正しいか確認: `http://localhost:8000`
-3. 別のブラウザで試す
-4. キャッシュをクリアする
+1. Verify server is running
+2. Check URL is correct: `http://localhost:8000`
+3. Try a different browser
+4. Clear cache
 
-### 検証が遅い
+### Verification is Slow
 
-Gemini APIの呼び出しには時間がかかる場合があります（10-30秒程度）。
-ネットワーク接続が安定していることを確認してください。
+Gemini API calls can take time (10-30 seconds).
+Ensure your network connection is stable.
 
-## 🎓 次のステップ
+## 🎓 Next Steps
 
-システムが正常に動作したら、以下を試してみましょう：
+Once the system is working properly, try these:
 
-1. **独自のプロトコルファイルでテスト**
-   - あなたのOpentrons実験プロトコルをアップロード
-   - 実際のセッティング写真で検証
+1. **Test with Your Own Protocol Files**
+   - Upload your Opentrons experimental protocol
+   - Validate with actual setup photos
 
-2. **APIを直接使用**
-   - `/api/validate` エンドポイントをcURLやPythonから呼び出し
-   - 自動化スクリプトに組み込む
+2. **Use API Directly**
+   - Call `/api/validate` endpoint with cURL or Python
+   - Integrate into automation scripts
 
-3. **コードをカスタマイズ**
-   - `backend/prompts.py` でチェック項目を調整
-   - `frontend/` でUIをカスタマイズ
+3. **Customize Code**
+   - Adjust checkpoints in `backend/prompts.py`
+   - Customize UI in `frontend/`
 
-## 📚 詳細情報
+## 📚 More Information
 
-より詳しい情報は、以下のドキュメントを参照してください：
+For more detailed information, refer to these documents:
 
-- [README.md](../README.md): 完全なドキュメント
-- [requirements.md](requirements.md): 要件定義書
-- [FastAPI ドキュメント](http://localhost:8000/docs): APIの詳細仕様（サーバー起動後にアクセス）
+- [README.md](../README.md): Complete documentation
+- [requirements.md](requirements.md): Requirements document
+- [FastAPI Documentation](http://localhost:8000/docs): API detailed specifications (access after server starts)
 
-## 💡 ヒント
+## 💡 Tips
 
-- **画像の撮り方**: デッキ全体が見えるように真上から撮影すると、AIの判定精度が上がります
-- **プロトコルの作成**: load_labware()とload_trash_bin()の位置指定を明確に記述してください
-- **結果の解釈**: AIの判定は参考情報です。最終的な確認は人間が行ってください
+- **Taking Photos**: Shoot from directly above so the entire deck is visible - improves AI judgment accuracy
+- **Writing Protocols**: Clearly specify positions in load_labware() and load_trash_bin()
+- **Interpreting Results**: AI judgment is for reference. Always perform final human verification
 
 ---
 
-**問題が解決しない場合は、GitHubのIssueで質問してください。**
-
+**If problems persist, please ask questions in GitHub Issues.**

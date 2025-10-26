@@ -1,5 +1,5 @@
 """
-API動作確認用の簡易テストスクリプト
+SanityCheck AI - Simple API Test Script
 """
 
 import os

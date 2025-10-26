@@ -1,119 +1,121 @@
-# Opentrons Protocol Sanity Check System - 要件定義書
+# SanityCheck AI - Requirements Document
 
-## 1. プロジェクト概要
+## 1. Project Overview
 
-Opentrons実験プロトコルファイル(.py)を解析し、物理セッティングのチェックポイントを自動生成。人間が行ったセッティングの画像をAIで検証し、ミスがないかを判定するシステム。
+SanityCheck AI analyzes Opentrons experimental protocol files (.py), automatically generates checkpoints for physical setup verification, and uses AI to validate actual setup images, detecting any mistakes.
 
-## 2. システムアーキテクチャ
+## 2. System Architecture
 
 ```
-[フロントエンド (Web UI)]
-    ↓ ファイルアップロード (.py + 画像1枚)
-[バックエンド (FastAPI)]
-    ↓ API呼び出し
-[Gemini 2.5 Pro API]
-  - フェーズ1: プロトコル解析 → チェックポイント生成
-  - フェーズ2: 画像検証 → 各項目の○×判定
-    ↓ 結果返却
-[フロントエンド]
-  - チェック項目と結果を表示
+[Frontend (Web UI)]
+    ↓ File Upload (.py + 1 image)
+[Backend (FastAPI)]
+    ↓ API Call
+[Gemini 2.0 API]
+  - Phase 1: Protocol Analysis → Checkpoint Generation
+  - Phase 2: Image Validation → Pass/Fail Judgment
+    ↓ Return Results
+[Frontend]
+  - Display Checkpoints and Results
 ```
 
-## 3. 機能要件
+## 3. Functional Requirements
 
-### 3.1 ファイルアップロード機能
+### 3.1 File Upload Function
 
-- Opentrons プロトコルファイル (.py) のアップロード
-- セッティング画像 (jpg/png) 1枚のアップロード
-- ファイル形式のバリデーション
+- Upload Opentrons protocol file (.py)
+- Upload setup image (jpg/png) - 1 image
+- File format validation
 
-### 3.2 チェックポイント生成機能（Gemini APIフェーズ1）
+### 3.2 Checkpoint Generation Function (Gemini API Phase 1)
 
-- プロトコルファイルを解析
-- 物理セッティングで確認すべきチェックポイントを生成
-- チェックポイント例：
-    - はじめにC2にピペットチップラックがあるか
-    - C2内のすべてのピペットチップが埋まっているか
-    - 無駄な場所にケースが置かれていないか
-    - その他プロトコル固有の要件
+- Analyze protocol file
+- Generate checkpoints for physical setup verification
+- Checkpoint examples:
+    - Is pipette tip rack at C2?
+    - Are all pipette tips filled in C2?
+    - Are there unnecessary items in unwanted locations?
+    - Other protocol-specific requirements
 
-### 3.3 画像検証機能（Gemini APIフェーズ2）
+### 3.3 Image Validation Function (Gemini API Phase 2)
 
-- 生成されたチェックポイントをもとに画像を検証
-- 各チェック項目ごとに○（合格）または×（不合格）を判定
-- 不合格の場合は理由を記載
+- Validate image based on generated checkpoints
+- Judge pass (○) or fail (×) for each checkpoint
+- Provide reasons for failed items
 
-### 3.4 結果表示機能
+### 3.4 Result Display Function
 
-- チェック項目一覧の表示
-- 各項目の判定結果（○×）を表示
-- 総合判定（全項目合格/不合格あり）
-- 不合格項目の詳細説明
+- Display checkpoint list
+- Display judgment result (○×) for each item
+- Overall judgment (all passed/failed)
+- Detailed explanation for failed items
 
-## 4. 技術スタック
+## 4. Technology Stack
 
-### フロントエンド
+### Frontend
 
-- HTML/CSS/JavaScript（シンプルUI）
-- またはReact/Vue.js（将来拡張を考慮する場合）
+- HTML/CSS/JavaScript (Simple UI)
+- React/Vue.js (for future expansion if needed)
 
-### バックエンド
+### Backend
 
 - Python 3.10+
-- FastAPI（Web APIフレームワーク）
-- Google Generative AI SDK（Gemini API）
-- Uvicorn（ASGIサーバー）
+- FastAPI (Web API Framework)
+- Google Generative AI SDK (Gemini API)
+- Uvicorn (ASGI Server)
 
-### その他
+### Other
 
-- dotenv（環境変数管理）
-- Pillow（画像処理用、必要に応じて）
+- dotenv (Environment variable management)
+- Pillow (Image processing, if needed)
 
-## 5. 処理フロー
+## 5. Processing Flow
 
-### 5.1 全体フロー
+### 5.1 Overall Flow
 
-1. ユーザーがWeb UIでプロトコルファイル(.py)と画像をアップロード
-2. バックエンドがファイルを受信
-3. Gemini APIに対してSystem Promptとプロトコルファイルを送信（フェーズ1）
-4. Geminiがチェックポイントを生成（JSON形式で返却）
-5. 同じセッション（コンテキスト保持）で画像を追加送信（フェーズ2）
-6. Geminiが各チェックポイントを検証し、結果を返却（JSON形式）
-7. バックエンドが結果を整形してフロントエンドに返却
-8. UIに検証結果を表示
+1. User uploads protocol file (.py) and image via Web UI
+2. Backend receives files
+3. Send System Prompt and protocol file to Gemini API (Phase 1)
+4. Gemini generates checkpoints (returns in JSON format)
+5. Send image to same session (context maintained) (Phase 2)
+6. Gemini validates each checkpoint and returns results (in JSON format)
+7. Backend formats results and returns to frontend
+8. Display verification results in UI
 
-### 5.2 Gemini API呼び出し詳細
+### 5.2 Gemini API Call Details
 
-**フェーズ1: チェックポイント生成**
+**Phase 1: Checkpoint Generation**
 
-- System Instruction: プロトコル解析とチェックポイント生成の指示
-- Input: プロトコルファイルの内容（テキスト）
-- Output: チェックポイントリスト（JSON）
+- System Instruction: Instructions for protocol analysis and checkpoint generation
+- Input: Protocol file content (text)
+- Output: Checkpoint list (JSON)
 
-**フェーズ2: 画像検証**
+**Phase 2: Image Validation**
 
-- 同じチャットセッション（コンテキスト継続）
-- Input: セッティング画像
-- Output: 各チェックポイントの検証結果（JSON）
+- Same chat session (context continued)
+- Input: Setup image
+- Output: Verification results for each checkpoint (JSON)
 
-## 6. チェックポイント定義（System Instructionに含める）
+## 6. Checkpoint Definition (Include in System Instruction)
 
-デフォルトのチェック項目例：
+Default checkpoint examples:
 
-1. C2にピペットチップラックが配置されているか
-2. C2内のすべてのピペットチップが正しく埋まっているか
-3. A3にゴミ箱（trash bin）が配置されているか
-4. 不要な場所にラボウェアが置かれていないか
-5. プロトコルで指定された他のラボウェアが正しい位置にあるか
+1. Is pipette tip rack placed at C2?
+2. Are all pipette tips properly filled in C2?
+3. Is trash bin placed at A3?
+4. Are there unnecessary labware in unspecified locations?
+5. Are other labware specified in the protocol at correct positions?
 
-## 7. 入出力仕様
+**Important: Do NOT include deck offset settings (set_offset) in checkpoints - these are software configurations.**
 
-### 7.1 API入力
+## 7. Input/Output Specification
 
-- プロトコルファイル: `.py`形式（multipart/form-data）
-- 画像ファイル: `.jpg` or `.png`（multipart/form-data）
+### 7.1 API Input
 
-### 7.2 API出力（JSON）
+- Protocol file: `.py` format (multipart/form-data)
+- Image file: `.jpg` or `.png` (multipart/form-data)
+
+### 7.2 API Output (JSON)
 
 ```json
 {
@@ -121,68 +123,70 @@ Opentrons実験プロトコルファイル(.py)を解析し、物理セッティ
   "checkpoints": [
     {
       "id": 1,
-      "description": "C2にピペットチップラックが配置されているか",
+      "description": "Is pipette tip rack placed at C2?",
       "result": "pass",
       "details": ""
     },
     {
       "id": 2,
-      "description": "C2内のすべてのピペットチップが正しく埋まっているか",
+      "description": "Are all pipette tips properly filled in C2?",
       "result": "fail",
-      "details": "左下のピペットチップが不足しています"
+      "details": "Missing tips in the bottom left area"
     }
   ],
   "overall_result": "fail"
 }
 ```
 
-### 7.3 UI表示
+### 7.3 UI Display
 
-- チェックポイント一覧（番号、説明、結果アイコン）
-- 総合判定（大きく表示）
-- 不合格項目の詳細説明
+- Checkpoint list (number, description, result icon)
+- Overall judgment (prominently displayed)
+- Detailed explanation for failed items
 
-## 8. ファイル構成（予定）
+## 8. File Structure
 
 ```
 sanitycheckAI/
-├── README.md              # システム説明、セットアップ手順
-├── requirements.txt       # Python依存関係
-├── .env.example          # 環境変数テンプレート
+├── README.md              # System description, setup instructions
+├── requirements.txt       # Python dependencies
+├── .env                   # Environment variables (create yourself)
 ├── backend/
-│   ├── main.py           # FastAPIアプリケーション
-│   ├── gemini_service.py # Gemini API連携
-│   └── prompts.py        # System Instruction定義
+│   ├── main.py           # FastAPI application
+│   ├── gemini_service.py # Gemini API integration
+│   └── prompts.py        # System instruction definitions
 ├── frontend/
-│   ├── index.html        # メインUI
-│   ├── style.css         # スタイル
-│   └── script.js         # フロントエンドロジック
+│   ├── index.html        # Main UI
+│   ├── style.css         # Styles
+│   └── script.js         # Frontend logic
 └── docs/
-    └── requirements.md   # 本要件定義書
+    ├── requirements.md   # This requirements document
+    └── QUICKSTART.md     # Quick start guide
 ```
 
-## 9. 実装優先順位
+## 9. Implementation Priority
 
-1. 要件定義書作成（本ドキュメント）
-2. バックエンドAPIの実装（FastAPI + Gemini API連携）
-3. System Instruction & Prompt設計
-4. フロントエンドUI実装
-5. 統合テスト（good_photo_1.jpg、bad_photo_*.jpgで検証）
-6. ドキュメント整備
+1. Requirements document creation (this document)
+2. Backend API implementation (FastAPI + Gemini API integration)
+3. System Instruction & Prompt design
+4. Frontend UI implementation
+5. Integration testing (verify with good_photo_1.jpg, bad_photo_*.jpg)
+6. Documentation improvement
 
-## 10. 制約事項・前提条件
+## 10. Constraints and Prerequisites
 
-- 画像の事前処理は行わない（Gemini APIに直接渡す）
-- 1回の検証につき画像1枚のみ
-- Gemini 2.5 Pro APIキーが必要
-- インターネット接続必須
-- プロトコルファイルはOpentrons API 2.xフォーマット
+- No image preprocessing (pass directly to Gemini API)
+- Only 1 image per verification
+- Gemini API key required
+- Internet connection required
+- Protocol file must be in Opentrons API 2.x format
 
-## 11. 将来的な拡張可能性
+## 11. Future Enhancement Possibilities
 
-- 複数画像の同時検証
-- カスタムチェックポイントの追加UI
-- 検証履歴の保存
-- 画像アノテーション（問題箇所のハイライト）
-- 他のロボットプラットフォームへの対応
-
+- Multiple image verification
+- Custom checkpoint addition UI
+- Verification history storage
+- Image annotation (highlighting problem areas)
+- Support for other robot platforms
+- User authentication
+- Database integration

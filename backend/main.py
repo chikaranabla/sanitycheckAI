@@ -14,8 +14,8 @@ from typing import Dict, Any
 from backend.gemini_service import GeminiService
 
 app = FastAPI(
-    title="Opentrons Protocol Sanity Check API",
-    description="Physical setup verification system for Opentrons experimental protocols",
+    title="SanityCheck AI API",
+    description="AI-powered physical setup verification system for Opentrons experimental protocols",
     version="1.0.0"
 )
 
@@ -40,7 +40,7 @@ async def root():
     index_path = frontend_path / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
-    return {"message": "Opentrons Protocol Sanity Check API"}
+    return {"message": "SanityCheck AI API", "status": "running"}
 
 
 @app.get("/health")
