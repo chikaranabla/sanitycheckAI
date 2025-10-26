@@ -8,11 +8,23 @@ SanityCheck AI analyzes Opentrons experimental protocol files (.py), automatical
 
 ## 🎯 Key Features
 
+### 🔍 Setup Verification
 - **Automated Checkpoint Generation**: Automatically generates verification items from protocol files
 - **AI-Powered Image Validation**: AI analyzes setup images and validates each checkpoint
-- **Intuitive Web UI**: Simple web interface for file upload and result display
 - **Detailed Reports**: Shows pass/fail status and detailed explanations for each checkpoint
 - **Zero Configuration**: No image preprocessing required - just upload and verify
+
+### 🧪 Experiment Monitoring (NEW!)
+- **Dual AI Analysis**: Combines Random Forest ML with Gemini Vision API for contamination detection
+- **Real-Time Monitoring**: Tracks bacterial culture wells during experiment execution
+- **Time-Series Analysis**: Displays well status at multiple timepoints (t=0s, 60s, 120s, etc.)
+- **Interactive Timeline**: Expandable accordion view for detailed analysis results
+- **Comprehensive Insights**: Shows both ML confidence scores and LLM reasoning
+
+### 🎨 User Interface
+- **Intuitive Web UI**: Modern, responsive interface for seamless workflow
+- **Multi-modal AI**: Integrates text analysis with computer vision
+- **Mobile-Friendly**: Works on desktop, tablet, and mobile devices
 
 ---
 
@@ -66,7 +78,17 @@ PORT=8000
 3. Click "Create API Key"
 4. Copy the generated API key and paste it into the `.env` file
 
-### 5. Start the Server
+### 5. Train the Contamination Detection Model (First Time Only)
+
+Before starting the server, train the Random Forest model on your well image data:
+
+```bash
+python train_model.py
+```
+
+**Note**: This requires the artificial well image data in `1_Clean_Samples/` and `2_Contaminated_Samples/` directories. The training will extract features from all images and save the trained model in `backend/models/`.
+
+### 6. Start the Server
 
 ```bash
 # Method 1: Run as Python module
@@ -86,7 +108,7 @@ http://localhost:8000
 
 ## 📖 How to Use
 
-### Basic Usage
+### Phase 1: Setup Verification
 
 1. **Prepare Files**
    - Opentrons protocol file (.py)
@@ -102,6 +124,23 @@ http://localhost:8000
    - Check overall result (Pass/Fail)
    - Review each checkpoint in detail
    - For failed items, check the issue description
+
+### Phase 2: Experiment Execution & Monitoring (NEW!)
+
+4. **Start Experiment** (if verification passed)
+   - Click "▶️ Execute Experiment" button
+   - System simulates automated experiment with time-series data
+
+5. **Monitor Real-Time Results**
+   - Timeline appears progressively: new timepoint every 10 seconds
+   - View timepoints (t=0s, 10s, 20s, 30s, 40s, 50s)
+   - Click on any timepoint to expand details
+   - See well-by-well analysis with images (A1, A2, A3)
+
+6. **Review Analysis**
+   - **Random Forest**: ML-based contamination prediction with confidence score
+   - **Gemini Vision**: LLM-based analysis with detailed reasoning
+   - Compare both methods to understand contamination status
 
 ### Sample Files
 
@@ -119,24 +158,69 @@ Use these files to verify the system is working correctly.
 
 ```
 sanitycheckAI/
-├── README.md                  # This file
-├── requirements.txt           # Python dependencies
-├── .env                       # Environment variables (create yourself)
-├── 96-ch_partial_test.py      # Sample protocol
-├── good_photo_1.jpg           # Sample image (correct)
-├── bad_photo_*.jpg            # Sample images (incorrect)
+├── README.md                       # This file
+├── requirements.txt                # Python dependencies
+├── train_model.py                  # Model training script
+├── .env                            # Environment variables (create yourself)
+├── 96-ch_partial_test.py           # Sample protocol
+├── good_photo_1.jpg                # Sample image (correct)
+├── bad_photo_*.jpg                 # Sample images (incorrect)
+├── 1_Clean_Samples/                # Clean well images for training
+├── 2_Contaminated_Samples/         # Contaminated well images for training
 ├── backend/
-│   ├── main.py               # FastAPI application
-│   ├── gemini_service.py     # Gemini API integration
-│   └── prompts.py            # System instruction definitions
+│   ├── main.py                    # FastAPI application & API endpoints
+│   ├── gemini_service.py          # Gemini API integration
+│   ├── prompts.py                 # System instruction definitions
+│   ├── feature_extraction.py     # Feature extraction for ML
+│   ├── contamination_model.py    # Random Forest model training
+│   ├── data_loader.py            # Image data loading utilities
+│   ├── experiment_simulator.py   # Time-series experiment simulation
+│   ├── well_analyzer.py          # Dual AI analysis (RF + Gemini)
+│   └── models/                   # Trained model storage
+│       ├── rf_model.pkl          # Random Forest model
+│       └── scaler.pkl            # Feature scaler
 ├── frontend/
-│   ├── index.html            # Main UI
-│   ├── style.css             # Styles
-│   └── script.js             # Frontend logic
+│   ├── index.html                # Main UI with execution screen
+│   ├── style.css                 # Styles including timeline
+│   └── script.js                 # Frontend logic with experiment
 └── docs/
-    ├── requirements.md       # Requirements document
+    ├── requirements.md            # Requirements document
     └── QUICKSTART.md         # Quick start guide
 ```
+
+---
+
+## 🧪 Experiment Simulation Details
+
+### Real-Time Monitoring Flow
+
+After setup verification passes, the experiment execution begins:
+
+1. **t=0s (Initial)**: First timepoint appears immediately - all wells clean
+2. **t=10s**: Second timepoint appears after 10 seconds
+3. **t=20s, 30s, 40s, 50s**: Subsequent timepoints appear every 10 seconds
+
+### Contamination Scenario: "Gradual"
+
+```
+t=0s   (Initial)  → All clean (A1 ✅, A2 ✅, A3 ✅)
+t=10s             → All clean (A1 ✅, A2 ✅, A3 ✅)
+t=20s             → All clean (A1 ✅, A2 ✅, A3 ✅)
+t=30s             → A1 contamination begins (A1 ⚠️, A2 ✅, A3 ✅)
+t=40s             → A1 contaminated (A1 ⚠️, A2 ✅, A3 ✅)
+t=50s             → A1 and A2 contaminated (A1 ⚠️, A2 ⚠️, A3 ✅)
+```
+
+- **A1**: Contamination detected starting at t=30s
+- **A2**: Contamination detected starting at t=50s
+- **A3**: Control well - remains clean throughout
+
+### What You'll See
+
+When you expand a timepoint:
+- **Well Image**: Actual microscope image for each well
+- **RF Analysis**: Confidence score (0.00 - 1.00) from Random Forest model
+- **LLM Analysis**: Natural language reasoning from Gemini Vision API
 
 ---
 

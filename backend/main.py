@@ -5,7 +5,7 @@ FastAPI Application for Opentrons Protocol Sanity Check
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 import os
 import tempfile
 from pathlib import Path
@@ -164,6 +164,160 @@ async def generate_checkpoints(
         raise HTTPException(
             status_code=500,
             detail=f"Error occurred during checkpoint generation: {str(e)}"
+        )
+
+
+# ============================================================================
+# EXPERIMENT EXECUTION ENDPOINTS
+# ============================================================================
+
+from backend.experiment_simulator import ExperimentSimulator
+from backend.well_analyzer import WellAnalyzer
+
+# Global instances
+experiment_simulator = ExperimentSimulator()
+well_analyzer = WellAnalyzer()
+
+
+@app.post("/api/execute")
+async def execute_experiment():
+    """
+    Start experiment execution simulation
+    
+    Returns:
+        Experiment ID and initial data
+    """
+    try:
+        # Create experiment with gradual contamination scenario
+        experiment_id = experiment_simulator.create_experiment(
+            num_timepoints=6,
+            interval_seconds=10,
+            contamination_scenario="gradual"
+        )
+        
+        # Get experiment data
+        experiment_data = experiment_simulator.get_experiment(experiment_id)
+        
+        # Analyze all wells at all timepoints
+        for timepoint in experiment_data['timepoints']:
+            for well in timepoint['wells']:
+                # Perform dual analysis
+                analysis = well_analyzer.analyze_well(
+                    well['image_array'],
+                    well['image_path']
+                )
+                
+                # Add analysis results
+                well['rf_prediction'] = analysis['rf_prediction']
+                well['llm_prediction'] = analysis['llm_prediction']
+                
+                # Remove image_array (not JSON serializable)
+                well.pop('image_array', None)
+        
+        return {
+            "experiment_id": experiment_id,
+            "status": "completed",
+            "timepoints": experiment_data['timepoints']
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error starting experiment: {str(e)}"
+        )
+
+
+@app.get("/api/experiment/{experiment_id}")
+async def get_experiment(experiment_id: str):
+    """
+    Get experiment status and results
+    
+    Args:
+        experiment_id: Experiment ID
+        
+    Returns:
+        Complete experiment data
+    """
+    try:
+        experiment_data = experiment_simulator.get_experiment(experiment_id)
+        return experiment_data
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving experiment: {str(e)}"
+        )
+
+
+@app.get("/api/well_image/{experiment_id}/{time}/{well_id}")
+async def get_well_image(experiment_id: str, time: int, well_id: str):
+    """
+    Get well image for specific timepoint (converted to PNG for browser display)
+    
+    Args:
+        experiment_id: Experiment ID
+        time: Time in seconds
+        well_id: Well ID (A1, A2, A3)
+        
+    Returns:
+        PNG image file
+    """
+    try:
+        image_path = experiment_simulator.get_well_image_path(
+            experiment_id, time, well_id
+        )
+        
+        if not os.path.exists(image_path):
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        # Convert TIFF to PNG for browser compatibility
+        from PIL import Image
+        import io
+        
+        img = Image.open(image_path)
+        
+        # Convert to RGB if necessary
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Save to bytes buffer as PNG
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='PNG')
+        img_byte_arr.seek(0)
+        
+        return Response(content=img_byte_arr.getvalue(), media_type="image/png")
+        
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving image: {str(e)}"
+        )
+
+
+@app.post("/api/train_model")
+async def train_contamination_model():
+    """
+    Train the Random Forest contamination detection model
+    
+    Returns:
+        Training results
+    """
+    try:
+        results = well_analyzer.train_rf_model()
+        return {
+            "status": "success",
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error training model: {str(e)}"
         )
 
 

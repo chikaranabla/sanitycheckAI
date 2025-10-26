@@ -28,7 +28,7 @@ class GeminiService:
         # Gemini モデルの初期化
         # 注: system_instructionはチャットの最初のメッセージとして送信します
         self.model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash-exp"
+            model_name="gemini-2.0-flash"
         )
         
         self.chat = None
