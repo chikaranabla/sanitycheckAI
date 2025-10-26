@@ -321,6 +321,36 @@ async def train_contamination_model():
         )
 
 
+@app.get("/api/growth_analysis/{image_name}")
+async def get_growth_analysis_image(image_name: str):
+    """
+    Serve growth analysis images from data_growth folder
+    
+    Args:
+        image_name: Name of the image file
+        
+    Returns:
+        Image file
+    """
+    # Only allow specific images
+    allowed_images = [
+        "plate_02_grid_layout.png",
+        "A2_normal.png", 
+        "A3_noisy.png",
+        "A4_contamination.png"
+    ]
+    
+    if image_name not in allowed_images:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    image_path = Path(__file__).parent.parent / "data_growth" / image_name
+    
+    if not image_path.exists():
+        raise HTTPException(status_code=404, detail="Image file not found")
+    
+    return FileResponse(str(image_path), media_type="image/png")
+
+
 if __name__ == "__main__":
     import uvicorn
     

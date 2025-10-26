@@ -230,6 +230,9 @@ function displayExperimentTimelineProgressively(data) {
             // All timepoints added
             clearInterval(intervalId);
             console.log('All timepoints displayed');
+            
+            // Show growth analysis section after all timepoints are displayed
+            showGrowthAnalysisSection();
         }
     }, 10000); // 10 seconds
 }
@@ -354,6 +357,49 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Show growth analysis section
+function showGrowthAnalysisSection() {
+    const growthAnalysisSection = document.getElementById('growthAnalysisSection');
+    if (growthAnalysisSection) {
+        growthAnalysisSection.style.display = 'block';
+        
+        // Initialize toggle functionality
+        initializeGrowthAnalysisToggles();
+    }
+}
+
+// Initialize growth analysis toggles
+function initializeGrowthAnalysisToggles() {
+    // Main toggle for Individual Wells
+    const individualWellsHeader = document.getElementById('individualWellsHeader');
+    const individualWellsContent = document.getElementById('individualWellsContent');
+    
+    if (individualWellsHeader && individualWellsContent) {
+        individualWellsHeader.addEventListener('click', () => {
+            const isOpen = individualWellsContent.style.display === 'block';
+            individualWellsContent.style.display = isOpen ? 'none' : 'block';
+            const toggleIcon = individualWellsHeader.querySelector('.accordion-toggle');
+            if (toggleIcon) {
+                toggleIcon.textContent = isOpen ? '▼' : '▲';
+            }
+        });
+    }
+    
+    // Individual well toggles (A2, A3, A4)
+    const wellImageHeaders = document.querySelectorAll('.well-image-header');
+    wellImageHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const wellImageContent = header.nextElementSibling;
+            const isOpen = wellImageContent.style.display === 'block';
+            wellImageContent.style.display = isOpen ? 'none' : 'block';
+            const toggleIcon = header.querySelector('.well-toggle');
+            if (toggleIcon) {
+                toggleIcon.textContent = isOpen ? '▼' : '▲';
+            }
+        });
+    });
 }
 
 // Initial state: show upload section

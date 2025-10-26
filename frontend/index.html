@@ -132,6 +132,63 @@
                         </div>
                     </div>
 
+                    <!-- Growth Analysis Section -->
+                    <div class="growth-analysis-section" id="growthAnalysisSection" style="display: none;">
+                        <h3>📊 Growth Curve Analysis</h3>
+                        
+                        <!-- Grid Layout Image (always visible) -->
+                        <div class="grid-layout-container">
+                            <img id="gridLayoutImage" 
+                                 src="/api/growth_analysis/plate_02_grid_layout.png" 
+                                 alt="96-Well Grid Layout"
+                                 class="grid-layout-image">
+                        </div>
+                        
+                        <!-- Individual Wells Toggle -->
+                        <div class="individual-wells-accordion">
+                            <div class="accordion-header" id="individualWellsHeader">
+                                <span>🔬 Individual Well Analysis (A2, A3, A4)</span>
+                                <span class="accordion-toggle">▼</span>
+                            </div>
+                            <div class="accordion-content" id="individualWellsContent" style="display: none;">
+                                
+                                <!-- A2 Toggle -->
+                                <div class="well-image-item">
+                                    <div class="well-image-header" data-well="A2">
+                                        <span>Well A2 - Normal Growth</span>
+                                        <span class="well-toggle">▼</span>
+                                    </div>
+                                    <div class="well-image-content" style="display: none;">
+                                        <img src="/api/growth_analysis/A2_normal.png" alt="Well A2">
+                                    </div>
+                                </div>
+                                
+                                <!-- A3 Toggle -->
+                                <div class="well-image-item">
+                                    <div class="well-image-header" data-well="A3">
+                                        <span>Well A3 - Noisy Signal</span>
+                                        <span class="well-toggle">▼</span>
+                                    </div>
+                                    <div class="well-image-content" style="display: none;">
+                                        <img src="/api/growth_analysis/A3_noisy.png" alt="Well A3">
+                                    </div>
+                                </div>
+                                
+                                <!-- A4 Toggle -->
+                                <div class="well-image-item">
+                                    <div class="well-image-header" data-well="A4">
+                                        <span>Well A4 - Contamination</span>
+                                        <span class="well-toggle">▼</span>
+                                    </div>
+                                    <div class="well-image-content" style="display: none;">
+                                        <img src="/api/growth_analysis/A4_contamination.png" alt="Well A4">
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+
                     <button id="backToValidationBtn" class="btn btn-secondary">
                         Back to Validation
                     </button>
