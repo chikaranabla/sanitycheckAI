@@ -31,7 +31,7 @@ class WellAnalyzer:
             raise ValueError("GOOGLE_API_KEY not found in environment")
         
         genai.configure(api_key=api_key)
-        self.gemini_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+        self.gemini_model = genai.GenerativeModel(model_name="gemini-2.5-pro")
     
     def analyze_well(self, image: np.ndarray, image_path: str = None) -> Dict:
         """
