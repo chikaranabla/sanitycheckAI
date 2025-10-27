@@ -1,8 +1,103 @@
+<div align="center">
+
+![SanityCheck AI](IMG_6731.PNG)
+
 # SanityCheck AI 🤖
 
-**AI-Powered Physical Setup Verification for Opentrons Protocols**
+**Supercharging Scientists in the Physical World**
+
+**AI-Powered QA/QC Agent for Automated and Autonomous Labs**
+
+</div>
+
+---
+
+## 🏆 Hackathon Project
+
+This project was developed during a hackathon by:
+- **Aldair E. Gongora**
+- **Chikara Oe** ([@chikaranabla](https://github.com/chikaranabla))
+- **Eslam Elshahat**
+- **Etai Sapoznik**
+
+---
+
+## 📖 Overview
 
 SanityCheck AI analyzes Opentrons experimental protocol files (.py), automatically generates checkpoints for physical setup verification, and uses AI (Gemini 2.0) to validate actual setup images, detecting any mistakes before you run your experiments.
+
+---
+
+## 🔀 Version Selection
+
+This project has two versions available. Choose the one that best fits your needs:
+
+### 📌 Version 1 (main branch) - **Recommended for Most Users**
+
+**What it offers:**
+- ✅ **Simple Setup Verification**: Upload protocol file and image, get instant validation
+- ✅ **Experiment Monitoring**: Track bacterial culture wells with dual AI analysis (Random Forest + Gemini Vision)
+- ✅ **Time-Series Analysis**: Monitor contamination over time with interactive timeline
+- ✅ **Ready to Use**: No additional setup required beyond API key
+- ✅ **Stable & Production-Ready**: Fully tested web-based interface
+
+**Best for:**
+- First-time users
+- Quick setup verification needs
+- Batch experiment monitoring
+- Standalone deployments
+
+**Branch:** `main` (default)
+
+### 🚀 Version 2 (v2 branch) - **Advanced Interactive System**
+
+**What it offers:**
+- ✅ **All features from Version 1**
+- ✅ **Chat-Based Verification**: Interactive conversational interface with AI
+- ✅ **Real-Time Camera Integration**: Connect directly to cameras for live capture
+- ✅ **MCP Protocol Support**: Model Context Protocol for advanced AI interactions
+- ✅ **Opentrons Server Integration**: Direct connection to Opentrons robots
+- ✅ **Enhanced Flexibility**: Dynamic workflow customization through chat
+
+**Best for:**
+- Advanced users
+- Laboratory automation integration
+- Real-time interactive verification
+- Custom workflow requirements
+- Research & development
+
+**Branch:** `v2`
+
+### 🎯 Quick Comparison
+
+| Feature | Version 1 (main) | Version 2 (v2) |
+|---------|-----------------|----------------|
+| Setup Verification | ✅ | ✅ |
+| Experiment Monitoring | ✅ | ✅ |
+| Web UI | ✅ | ✅ |
+| Chat Interface | ❌ | ✅ |
+| Camera Integration | ❌ | ✅ |
+| MCP Support | ❌ | ✅ |
+| Opentrons Direct Integration | ❌ | ✅ |
+| Setup Complexity | Simple | Advanced |
+| Stability | Production | Experimental |
+
+### 📥 How to Switch Versions
+
+**To use Version 1 (default):**
+```bash
+git checkout main
+```
+
+**To use Version 2:**
+```bash
+git checkout v2
+```
+
+After switching branches, reinstall dependencies:
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
