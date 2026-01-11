@@ -2,6 +2,8 @@
 
 ![SanityCheck AI](IMG_6731.PNG)
 
+🏆 Our team won first prize at the 24-hour AI Science Cell Culture Hackathon @ Monomer Bio for developing SanityCheck AI, an autonomous QA/QC agent that detects setup errors and contamination in robotic experiments. 🎉 [Event recap](https://www.linkedin.com/pulse/ai-science-cell-hack-recap-monomer-bio-oct-25-michael-raspuzzi-3l8pc/)
+
 # SanityCheck AI 🤖
 
 **Supercharging Scientists in the Physical World**
